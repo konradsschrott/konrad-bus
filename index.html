@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GUTS">
+<meta name="theme-color" content="#0a0d12">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="color-scheme" content="dark">
+<title>GUTS Dupont</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #0a0d12; --card: #151b23; --line: #232c38;
+    --fg: #e8eef5; --muted: #8695a6;
+    --go: #34d399; --soon: #fbbf24; --gone: #f87171;
+    --num: clamp(40px, min(12vh, 21vw), 92px);
+  }
+  html, body { height: 100%; }
+  body {
+    background: #0a0d12; background: var(--bg); color: #e8eef5; color: var(--fg);
+    overflow: hidden;
+    font: 500 16px/1.2 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    height: 100vh; height: 100dvh; display: flex; flex-direction: column; gap: 6px; overflow: hidden;
+    padding: calc(env(safe-area-inset-top) + 10px) calc(env(safe-area-inset-right) + 12px)
+             calc(env(safe-area-inset-bottom) + 10px) calc(env(safe-area-inset-left) + 12px);
+  }
+  header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex: none; }
+  .brand { font-size: 12px; font-weight: 700; letter-spacing: .14em; color: var(--muted); }
+  .clock { font-size: 12px; color: var(--muted); }
+  .sim {
+    flex: none; background: #3b2f0b; color: #fcd34d; border: 1px solid #6b5310;
+    border-radius: 8px; padding: 5px 9px; font-size: 11.5px; letter-spacing: .02em;
+  }
+  .cards { flex: 1 1 auto; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+  .card {
+    flex: 1 1 0; min-height: 84px; background: var(--card); border: 1px solid var(--line);
+    border-radius: 16px; padding: 10px 14px; display: flex; flex-direction: column; justify-content: center;
+  }
+  .card.primary { flex: 1.32 1 0; }
+  .hd { display: flex; align-items: baseline; gap: 8px; flex: none; }
+  .stop { font-size: clamp(13px, 2.1vh, 17px); font-weight: 700; letter-spacing: .01em;
+          flex: none; white-space: nowrap; }
+  .sub { font-size: 11px; color: var(--muted); min-width: 0;
+         overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .badge {
+    margin-left: auto; flex: none; font-size: 10.5px; font-weight: 600; color: var(--muted);
+    border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; white-space: nowrap;
+  }
+  .mid { display: flex; align-items: center; gap: 10px; min-height: 0; min-width: 0; margin: 2px 0; }
+  /* "No service" plus a full weekday will not sit side by side on a phone. */
+  .card.off .mid { flex-direction: column; align-items: flex-start; gap: 1px; }
+  .num {
+    font-size: var(--num); font-weight: 700; line-height: .92; letter-spacing: -.03em;
+    color: var(--c, var(--fg)); flex: none;
+  }
+  .num.word { font-size: clamp(23px, 5.4vh, 42px); flex: 0 1 auto; min-width: 0; }
+  .unit { font-size: clamp(13px, 2.2vh, 18px); font-weight: 600; color: var(--c, var(--fg)); opacity: .8; }
+  .meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+  .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+  .dep { font-size: clamp(14px, 2.3vh, 19px); font-weight: 700; }
+  .lbl, .dep { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sprint { font-size: clamp(11.5px, 2vh, 14.5px); font-weight: 700; color: var(--soon);
+            flex: none; margin-bottom: 2px;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .then { font-size: clamp(11px, 1.9vh, 13.5px); color: var(--muted); flex: none;
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card.primary { --num: clamp(48px, min(15.5vh, 25vw), 116px); }
+  footer { flex: none; font-size: 10.5px; color: #55616f; text-align: center; }
+  /* Removed by the script below. It survives only where JavaScript never ran --
+     an iOS Quick Look preview, for one, which renders a silent black page. */
+  #jswarn {
+    flex: none; background: #3b1111; color: #fca5a5; border: 1px solid #7f1d1d;
+    border-radius: 10px; padding: 9px 11px; font-size: 12.5px; line-height: 1.35;
+  }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="brand">GUTS · DUPONT</span>
+    <span class="clock" id="clock"></span>
+  </header>
+  <div class="sim" id="sim" style="display:none"></div>
+  <div id="jswarn">This page needs JavaScript, and it has not run. A file preview
+    (iOS Quick Look) will not run it &mdash; open the page in a browser instead.</div>
+  <div class="cards" id="cards">
+  <section class="card primary" data-key="dupont">
+    <div class="hd"><span class="stop">Dupont Circle</span><span class="sub">20th &amp; Mass Ave</span><span class="badge" hidden></span></div>
+    <div class="mid"><span class="num word">&mdash;</span><span class="unit"></span>
+      <span class="meta"><span class="lbl"></span><span class="dep"></span></span></div>
+    <div class="sprint" hidden></div>
+    <div class="then"></div>
+  </section>
+  <section class="card" data-key="bta">
+    <div class="hd"><span class="stop">Bus Turnaround</span><span class="sub">BTA, main campus</span><span class="badge" hidden></span></div>
+    <div class="mid"><span class="num word">&mdash;</span><span class="unit"></span>
+      <span class="meta"><span class="lbl"></span><span class="dep"></span></span></div>
+    <div class="sprint" hidden></div>
+    <div class="then"></div>
+  </section>
+  <section class="card" data-key="lombardi">
+    <div class="hd"><span class="stop">Lombardi Circle</span><span class="sub">Lombardi Cancer Center</span><span class="badge" hidden></span></div>
+    <div class="mid"><span class="num word">&mdash;</span><span class="unit"></span>
+      <span class="meta"><span class="lbl"></span><span class="dep"></span></span></div>
+    <div class="sprint" hidden></div>
+    <div class="then"></div>
+  </section>
+  </div>
+  <footer>Published weekday timetable · not live</footer>
+</div>
+
+<script>
+"use strict";
+
+/* ---------------------------------------------------------------------------
+   Departure times, in minutes from midnight of the *service day*.
+   A value above 1440 is the small-hours tail of that same service day, so
+   Dupont's 1450 is the 12:10 AM bus that belongs to the previous weekday.
+
+   Generated by build_schedule.py from schedule.txt (the published weekday
+   timetable). Corrections that script applied to the source's own errors:
+     - Lombardi "12:25 AM", sat between 11:45 AM and 1:05 PM  -> 12:25 PM
+     - an arrival cell reading "16:20" in a 12-hour column     -> 4:20 PM
+     - closing "12:10 AM" / "12:30 AM" trips                   -> previous service day
+   Re-run that script against a fresh copy of the timetable when the
+   semester starts; GUTS revises it and posts service changes as news items.
+--------------------------------------------------------------------------- */
+const DUPONT = [380, 385, 390, 395, 400, 405, 410, 415, 420, 425, 430, 435, 440, 445, 450, 455, 460, 465, 470, 475, 480, 485, 490, 495, 500, 505, 510, 515, 520, 525, 530, 535, 540, 545, 550, 555, 560, 565, 570, 575, 580, 585, 590, 595, 600, 605, 610, 615, 625, 645, 665, 685, 705, 725, 745, 765, 785, 805, 825, 845, 865, 885, 905, 920, 925, 930, 935, 940, 945, 950, 955, 960, 965, 970, 975, 980, 985, 990, 995, 1000, 1005, 1010, 1015, 1020, 1025, 1030, 1035, 1040, 1045, 1050, 1055, 1060, 1065, 1070, 1075, 1080, 1085, 1090, 1095, 1100, 1105, 1110, 1115, 1120, 1125, 1130, 1135, 1140, 1145, 1150, 1155, 1160, 1170, 1190, 1210, 1230, 1250, 1270, 1290, 1310, 1330, 1350, 1370, 1390, 1410, 1430, 1450];
+
+const BTA = [365, 375, 385, 395, 405, 415, 425, 435, 445, 455, 465, 475, 485, 495, 505, 515, 525, 535, 545, 555, 565, 575, 585, 595, 605, 645, 685, 725, 765, 805, 845, 885, 905, 915, 925, 935, 945, 955, 965, 975, 985, 995, 1005, 1015, 1025, 1035, 1045, 1055, 1065, 1075, 1085, 1095, 1105, 1115, 1125, 1135, 1150, 1190, 1230, 1270, 1310, 1350, 1390, 1430];
+
+const LOMBARDI = [360, 370, 380, 390, 400, 410, 420, 430, 440, 450, 460, 470, 480, 490, 500, 510, 520, 530, 540, 550, 560, 570, 580, 590, 625, 665, 705, 745, 785, 825, 865, 900, 910, 920, 930, 940, 950, 960, 970, 980, 990, 1000, 1010, 1020, 1030, 1040, 1050, 1060, 1070, 1080, 1090, 1100, 1110, 1120, 1130, 1140, 1170, 1210, 1250, 1290, 1330, 1370, 1410];
+
+/* How long it takes you to walk to each stop. The countdown then tells you
+   when to LEAVE, not when the bus arrives. Set a stop to 0 to count down to
+   the bus itself instead. */
+const WALK_MIN = { dupont: 15, bta: 0, lombardi: 0 };
+
+/* How much of that walk you are willing to make up at a run. A bus you are
+   this recently late for is still offered, on its own line, so you can choose
+   to sprint for it rather than wait -- which in the sparser hours is the
+   difference between catching one and losing twenty minutes. */
+const SPRINT_MIN = 5;
+
+/* Card order. Dupont first: it is the stop you catch, not a campus end. */
+const BOARDS = [
+  { key: "dupont",   name: "Dupont Circle",   sub: "20th & Mass Ave", times: DUPONT,   primary: true },
+  { key: "bta",      name: "Bus Turnaround",  sub: "BTA, main campus",            times: BTA },
+  { key: "lombardi", name: "Lombardi Circle", sub: "Lombardi Cancer Center",      times: LOMBARDI },
+];
+
+const TZ = "America/New_York";
+const DAY_S = 86400;
+/* Before the day's first bus there is no span to be inside of, so also count
+   down once the first departure is this close rather than saying "No service"
+   at a stop whose bus is minutes away. */
+const LEAD_IN_S = 60 * 60;
+
+/* ---- "now", always as New York wall-clock ------------------------------- */
+
+/* ?t=2026-09-01T07:03 overrides now, for checking the first bus, the last bus,
+   midnight rollover, a weekend, or the sparse midday gap. It is read as New
+   York wall-clock time and then ticks forward in real time. */
+let simBase = null, realBase = 0;
+(function readOverride() {
+  const raw = new URLSearchParams(location.search).get("t");
+  if (!raw) return;
+  const m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(raw.trim());
+  if (!m) return;
+  simBase = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
+  realBase = Date.now();
+})();
+
+const partsET = new Intl.DateTimeFormat("en-US", {
+  timeZone: TZ, hourCycle: "h23",
+  year: "numeric", month: "2-digit", day: "2-digit",
+  hour: "2-digit", minute: "2-digit", second: "2-digit",
+});
+
+/* Calendar date plus seconds-since-midnight, in New York regardless of how the
+   phone's own clock is set. */
+function nowET() {
+  if (simBase !== null) {
+    const d = new Date(simBase + (Date.now() - realBase));
+    return { y: d.getUTCFullYear(), mo: d.getUTCMonth() + 1, d: d.getUTCDate(),
+             sec: d.getUTCHours() * 3600 + d.getUTCMinutes() * 60 + d.getUTCSeconds() };
+  }
+  const p = {};
+  for (const part of partsET.formatToParts(new Date())) p[part.type] = part.value;
+  return { y: +p.year, mo: +p.month, d: +p.day,
+           sec: (+p.hour % 24) * 3600 + (+p.minute) * 60 + (+p.second) };
+}
+
+const midnightOf = (now) => Date.UTC(now.y, now.mo - 1, now.d);
+
+/* ---- finding the next buses --------------------------------------------- */
+
+/* Departures still worth showing, as seconds from today's New York midnight.
+   Day -1 contributes its after-midnight tail; days ahead are scanned until we
+   have enough, which carries a Friday evening across the weekend to Monday. */
+function upcoming(times, walkSec, sprintSec, now, count) {
+  const base = midnightOf(now), out = [];
+  // Keep a bus you are late for while a run could still make it, but never one
+  // that has already pulled out -- so with no walk to make up, nothing is late.
+  const lead = Math.max(0, walkSec - sprintSec);
+  for (let d = -1; d <= 9 && out.length < count; d++) {
+    const dow = new Date(base + d * DAY_S * 1000).getUTCDay();
+    if (dow === 0 || dow === 6) continue;             // Mon-Fri only
+    for (const off of times) {
+      const t = d * DAY_S + off * 60;
+      if (t - now.sec < lead) continue;               // gone, or out of reach
+      out.push(t);
+      if (out.length >= count) break;
+    }
+  }
+  return out;
+}
+
+/* If a service day is running right now for this stop, the second it ends, as
+   seconds from today's midnight; otherwise null. Checks yesterday too, because
+   a service day that began Monday morning runs until Tuesday 12:10 AM. */
+function activeSpanEnd(times, now) {
+  const base = midnightOf(now);
+  for (const d of [-1, 0]) {
+    const dow = new Date(base + d * DAY_S * 1000).getUTCDay();
+    if (dow === 0 || dow === 6) continue;
+    const start = d * DAY_S + times[0] * 60;
+    const end = d * DAY_S + times[times.length - 1] * 60;
+    if (now.sec >= start && now.sec <= end) return end;
+  }
+  return null;
+}
+
+/* ---- formatting ---------------------------------------------------------- */
+
+function clock(t) {
+  const s = ((t % DAY_S) + DAY_S) % DAY_S;
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  return (h % 12 || 12) + ":" + String(m).padStart(2, "0") + " " + (h < 12 ? "AM" : "PM");
+}
+
+function weekday(now, t) {
+  const d = new Date(midnightOf(now) + Math.floor(t / DAY_S) * DAY_S * 1000);
+  return d.toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });
+}
+
+const colourFor = (mins) => mins > 5 ? "var(--go)" : mins >= 2 ? "var(--soon)" : "var(--gone)";
+
+/* ---- rendering ----------------------------------------------------------- */
+
+const clockEl = document.getElementById("clock");
+const simEl = document.getElementById("sim");
+
+/* The cards are in the HTML rather than built here, so the page still shows the
+   three stops if this script never runs, and the warning above says why. */
+const cards = BOARDS.map((b) => {
+  const el = document.querySelector('.card[data-key="' + b.key + '"]');
+  const walk = WALK_MIN[b.key] | 0;
+  const badge = el.querySelector(".badge");
+  if (walk > 0) { badge.textContent = walk + " min walk"; badge.hidden = false; }
+  return {
+    el, board: b, walkSec: walk * 60, sprintSec: SPRINT_MIN * 60, showLeave: walk > 0,
+    num: el.querySelector(".num"), unit: el.querySelector(".unit"),
+    lbl: el.querySelector(".lbl"), dep: el.querySelector(".dep"),
+    sprint: el.querySelector(".sprint"), then: el.querySelector(".then"),
+  };
+});
+
+function render() {
+  const now = nowET();
+
+  clockEl.textContent =
+    new Date(midnightOf(now)).toLocaleDateString("en-US",
+      { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }) +
+    " · " + clock(now.sec);
+  if (simBase !== null) {
+    simEl.style.display = "";
+    simEl.textContent = "Test mode — pretending it is " + weekday(now, now.sec) + " " + clock(now.sec);
+  }
+
+  for (const c of cards) {
+    // The list may open with buses you are already late for but could still run
+    // for. The big number always tracks the first one you can make at a walk --
+    // with buses every five minutes and a quarter-hour walk, leading with the
+    // sprint would mean the card nagged you to run all day.
+    const list = upcoming(c.board.times, c.walkSec, c.sprintSec, now, 5);
+    const i = list.findIndex((t) => t - now.sec - c.walkSec >= 0);
+
+    if (i < 0) {                                         // never happens with a
+      c.el.classList.remove("off");                      // Mon-Fri timetable, but
+      c.num.textContent = "—";                           // do not render junk
+      c.num.className = "num word";
+      c.unit.textContent = ""; c.lbl.textContent = "";
+      c.dep.textContent = ""; c.then.textContent = "";
+      c.sprint.hidden = true;
+      continue;
+    }
+
+    const next = list.slice(i);
+    const after = next.slice(1, 3).map(clock).join("  ·  ");
+
+    // An earlier bus still inside the sprint window: worth offering, since
+    // catching it can save a twenty-minute wait in the sparser hours.
+    if (i > 0) {
+      const runFor = list[0];
+      const lateBy = Math.ceil((now.sec + c.walkSec - runFor) / 60);
+      c.sprint.textContent = "Run for " + clock(runFor) + " · left " + lateBy + " min ago";
+      c.sprint.hidden = false;
+    } else {
+      c.sprint.hidden = true;
+    }
+
+    // Count down while a service day is running and still has a bus you can
+    // reach, or while the next day's first bus is nearly due. Otherwise the
+    // timetable is genuinely off: overnight, or the weekend.
+    const spanEnd = activeSpanEnd(c.board.times, now);
+    const running = spanEnd !== null && next[0] <= spanEnd;
+    if (!running && next[0] - now.sec > LEAD_IN_S) {
+      c.el.classList.add("off");
+      c.num.textContent = "No service";
+      c.num.className = "num word";
+      c.num.style.setProperty("--c", "var(--muted)");
+      c.unit.textContent = "";
+      c.lbl.textContent = "next";
+      c.dep.textContent = weekday(now, next[0]) + " " + clock(next[0]);
+      // Do not claim the day is over while a bus is still coming that you
+      // cannot reach in time. If a run would catch it the sprint line above
+      // already says so; otherwise name it here, for someone already at the stop.
+      const missed = c.walkSec && i === 0 ? upcoming(c.board.times, 0, 0, now, 1)[0] : undefined;
+      c.then.textContent = missed !== undefined && missed < next[0]
+        ? clock(missed) + " bus is closer than your " + (c.walkSec / 60) + " min walk"
+        : after ? "then " + after : "";
+      continue;
+    }
+
+    c.el.classList.remove("off");
+    const mins = Math.floor((next[0] - now.sec - c.walkSec) / 60);   // >= 0 by construction
+    c.num.textContent = mins === 0 ? "Now" : String(mins);
+    c.num.className = "num" + (mins === 0 ? " word" : "");
+    c.num.style.setProperty("--c", colourFor(mins));
+    c.unit.textContent = mins === 0 ? "" : "min";
+    c.unit.style.setProperty("--c", colourFor(mins));
+    c.lbl.textContent = c.showLeave ? "leave in" : "departs in";
+    c.dep.textContent = "bus " + clock(next[0]);
+    c.then.textContent = after ? "then " + after : "";
+  }
+}
+
+document.getElementById("jswarn").hidden = true;   // the script is evidently running
+
+/* Cache the page for offline use once it is served over http(s). Opened as a
+   local file there is no worker to register, and none is needed. */
+if (typeof navigator !== "undefined" && "serviceWorker" in navigator &&
+    location.protocol.startsWith("http")) {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+render();
+/* Tick on the second, and refresh the moment the app comes back to the front. */
+setInterval(render, 1000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
+</script>
+</body>
+</html>
