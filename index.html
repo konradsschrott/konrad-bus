@@ -19,7 +19,7 @@
     --bg: #0a0d12; --card: #151b23; --line: #232c38;
     --fg: #e8eef5; --muted: #8695a6;
     --go: #34d399; --soon: #fbbf24; --gone: #f87171;
-    --num: clamp(40px, min(12vh, 21vw), 92px);
+    --num: clamp(36px, min(11vh, 19vw), 84px);
   }
   html, body { height: 100%; }
   body {
@@ -28,6 +28,7 @@
     font: 500 16px/1.2 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased;
   }
+  button { font: inherit; color: inherit; }
   .wrap {
     height: 100vh; height: 100dvh; display: flex; flex-direction: column; gap: 6px; overflow: hidden;
     padding: calc(env(safe-area-inset-top) + 10px) calc(env(safe-area-inset-right) + 12px)
@@ -55,25 +56,49 @@
     margin-left: auto; flex: none; font-size: 10.5px; font-weight: 600; color: var(--muted);
     border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; white-space: nowrap;
   }
-  .mid { display: flex; align-items: center; gap: 10px; min-height: 0; min-width: 0; margin: 2px 0; }
-  /* "No service" plus a full weekday will not sit side by side on a phone. */
-  .card.off .mid { flex-direction: column; align-items: flex-start; gap: 1px; }
-  .num {
-    font-size: var(--num); font-weight: 700; line-height: .92; letter-spacing: -.03em;
-    color: var(--c, var(--fg)); flex: none;
+
+  /* The tap target: a plain block, not a real <button>, so it is free of UA
+     chrome, with the pieces of a row laid out left (countdown) / right
+     (the bus's actual clock time) per row, and a second, smaller row for the
+     bus after that. Tapping opens the rest of today for that stop. */
+  .board {
+    flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+    justify-content: center; gap: 1px; cursor: pointer; border-radius: 10px;
+    margin: 0 -6px; padding: 0 6px;
   }
-  .num.word { font-size: clamp(23px, 5.4vh, 42px); flex: 0 1 auto; min-width: 0; }
-  .unit { font-size: clamp(13px, 2.2vh, 18px); font-weight: 600; color: var(--c, var(--fg)); opacity: .8; }
-  .meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
-  .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
-  .dep { font-size: clamp(14px, 2.3vh, 19px); font-weight: 700; }
-  .lbl, .dep { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .board:focus-visible { outline: 2px solid var(--go); outline-offset: -2px; }
+  .lbl { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+  .row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-width: 0; }
+  .row1 { margin-top: 1px; }
+  .row2 { opacity: .78; }
+  .cdwrap { display: flex; align-items: baseline; gap: 5px; flex: none; }
+  .cd {
+    font-size: var(--num); font-weight: 700; line-height: .92; letter-spacing: -.03em;
+    color: var(--c, var(--fg));
+  }
+  .cd.word { font-size: clamp(21px, 5vh, 38px); }
+  .cdu { font-size: clamp(12px, 2vh, 16px); font-weight: 600; color: var(--c, var(--fg)); opacity: .8; }
+  .row2 .cd { font-size: clamp(19px, min(5.5vh, 9vw), 34px); }
+  .row2 .cdu { font-size: clamp(10.5px, 1.7vh, 13px); }
+  .time {
+    font-weight: 700; text-align: right; white-space: nowrap; flex: none;
+    font-size: clamp(15px, 2.5vh, 20px);
+  }
+  .row2 .time { font-size: clamp(12px, 2vh, 14.5px); font-weight: 600; color: var(--muted); }
+  .card.primary { --num: clamp(44px, min(13.5vh, 22vw), 104px); }
+
+  /* No service: word plus a full weekday will not sit side by side on a phone. */
+  .off { display: flex; flex-direction: column; gap: 1px; }
+  .offword { font-size: clamp(21px, 5vh, 38px); font-weight: 700; color: var(--muted); line-height: .95; }
+  .offnext { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+  .offlbl { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; flex: none; }
+  .offtime { font-size: clamp(14px, 2.3vh, 18px); font-weight: 700;
+             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Wraps rather than truncating: the "closer than your walk" message is long
+     enough on a narrow phone that an ellipsis would swallow the useful half. */
   .sprint { font-size: clamp(11.5px, 2vh, 14.5px); font-weight: 700; color: var(--soon);
-            flex: none; margin-bottom: 2px;
-            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .then { font-size: clamp(11px, 1.9vh, 13.5px); color: var(--muted); flex: none;
-          overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .card.primary { --num: clamp(48px, min(15.5vh, 25vw), 116px); }
+            flex: none; margin-top: 2px; line-height: 1.25; }
   footer { flex: none; font-size: 10.5px; color: #55616f; text-align: center; }
   /* Removed by the script below. It survives only where JavaScript never ran --
      an iOS Quick Look preview, for one, which renders a silent black page. */
@@ -82,6 +107,40 @@
     border-radius: 10px; padding: 9px 11px; font-size: 12.5px; line-height: 1.35;
   }
   [hidden] { display: none !important; }
+
+  /* ---- the full-day sheet ------------------------------------------------ */
+  .sheet-backdrop {
+    position: fixed; inset: 0; background: rgba(0, 0, 0, .55);
+    display: flex; align-items: flex-end; z-index: 10;
+  }
+  .sheet {
+    width: 100%; max-height: 82vh; background: var(--card); border: 1px solid var(--line);
+    border-bottom: none; border-radius: 18px 18px 0 0; display: flex; flex-direction: column;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .sheet-hd {
+    flex: none; display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; padding: 14px 16px 10px; border-bottom: 1px solid var(--line);
+  }
+  .sheet-title { font-size: 15px; font-weight: 700; }
+  .sheet-sub { font-size: 11px; color: var(--muted); font-weight: 500; }
+  .sheet-close {
+    flex: none; width: 30px; height: 30px; border-radius: 999px; border: 1px solid var(--line);
+    background: transparent; color: var(--fg); font-size: 15px; line-height: 1; cursor: pointer;
+  }
+  .sheet-body { flex: 1 1 auto; overflow-y: auto; padding: 10px 14px 18px; -webkit-overflow-scrolling: touch; }
+  .sheet-empty { font-size: 13px; color: var(--muted); padding: 10px 2px; }
+  .sheet-grid {
+    display: grid; gap: 6px 10px; font-size: 12.5px; font-variant-numeric: tabular-nums;
+  }
+  .sheet-grid.g2 { grid-template-columns: repeat(2, 1fr); }
+  .sheet-grid.g3 { grid-template-columns: repeat(3, 1fr); }
+  .sheet-cell {
+    background: #101620; border: 1px solid var(--line); border-radius: 8px;
+    padding: 5px 7px; display: flex; flex-direction: column; gap: 1px; line-height: 1.25;
+  }
+  .sc-dep { font-weight: 700; }
+  .sc-arr { color: var(--muted); font-size: 11px; }
 </style>
 </head>
 <body>
@@ -96,27 +155,73 @@
   <div class="cards" id="cards">
   <section class="card primary" data-key="dupont">
     <div class="hd"><span class="stop">Dupont Circle</span><span class="sub">20th &amp; Mass Ave</span><span class="badge" hidden></span></div>
-    <div class="mid"><span class="num word">&mdash;</span><span class="unit"></span>
-      <span class="meta"><span class="lbl"></span><span class="dep"></span></span></div>
+    <div class="board" tabindex="0" role="button" aria-haspopup="dialog">
+      <span class="lbl"></span>
+      <span class="row row1">
+        <span class="cdwrap"><span class="cd">&mdash;</span><span class="cdu"></span></span>
+        <span class="time time1"></span>
+      </span>
+      <span class="row row2" hidden>
+        <span class="cdwrap"><span class="cd"></span><span class="cdu"></span></span>
+        <span class="time time2"></span>
+      </span>
+      <span class="off" hidden>
+        <span class="offword">No service</span>
+        <span class="offnext"><span class="offlbl">Next</span><span class="offtime"></span></span>
+      </span>
+    </div>
     <div class="sprint" hidden></div>
-    <div class="then"></div>
   </section>
   <section class="card" data-key="bta">
     <div class="hd"><span class="stop">Bus Turnaround</span><span class="sub">BTA, main campus</span><span class="badge" hidden></span></div>
-    <div class="mid"><span class="num word">&mdash;</span><span class="unit"></span>
-      <span class="meta"><span class="lbl"></span><span class="dep"></span></span></div>
+    <div class="board" tabindex="0" role="button" aria-haspopup="dialog">
+      <span class="lbl"></span>
+      <span class="row row1">
+        <span class="cdwrap"><span class="cd">&mdash;</span><span class="cdu"></span></span>
+        <span class="time time1"></span>
+      </span>
+      <span class="row row2" hidden>
+        <span class="cdwrap"><span class="cd"></span><span class="cdu"></span></span>
+        <span class="time time2"></span>
+      </span>
+      <span class="off" hidden>
+        <span class="offword">No service</span>
+        <span class="offnext"><span class="offlbl">Next</span><span class="offtime"></span></span>
+      </span>
+    </div>
     <div class="sprint" hidden></div>
-    <div class="then"></div>
   </section>
   <section class="card" data-key="lombardi">
     <div class="hd"><span class="stop">Lombardi Circle</span><span class="sub">Lombardi Cancer Center</span><span class="badge" hidden></span></div>
-    <div class="mid"><span class="num word">&mdash;</span><span class="unit"></span>
-      <span class="meta"><span class="lbl"></span><span class="dep"></span></span></div>
+    <div class="board" tabindex="0" role="button" aria-haspopup="dialog">
+      <span class="lbl"></span>
+      <span class="row row1">
+        <span class="cdwrap"><span class="cd">&mdash;</span><span class="cdu"></span></span>
+        <span class="time time1"></span>
+      </span>
+      <span class="row row2" hidden>
+        <span class="cdwrap"><span class="cd"></span><span class="cdu"></span></span>
+        <span class="time time2"></span>
+      </span>
+      <span class="off" hidden>
+        <span class="offword">No service</span>
+        <span class="offnext"><span class="offlbl">Next</span><span class="offtime"></span></span>
+      </span>
+    </div>
     <div class="sprint" hidden></div>
-    <div class="then"></div>
   </section>
   </div>
   <footer>Published weekday timetable · not live</footer>
+</div>
+
+<div class="sheet-backdrop" id="sheetBackdrop" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-hd">
+      <span><span class="sheet-title" id="sheetTitle"></span><br><span class="sheet-sub" id="sheetSub"></span></span>
+      <button type="button" class="sheet-close" id="sheetClose" aria-label="Close">&times;</button>
+    </div>
+    <div class="sheet-body" id="sheetBody"></div>
+  </div>
 </div>
 
 <script>
@@ -134,12 +239,22 @@
      - closing "12:10 AM" / "12:30 AM" trips                   -> previous service day
    Re-run that script against a fresh copy of the timetable when the
    semester starts; GUTS revises it and posts service changes as news items.
+
+   Each trip departs from BTA or Lombardi, calls at Dupont, and loops back to
+   that same point -- so boarding at Dupont takes you to whichever side that
+   particular trip started from. DUPONT_TO[i] ("bta"/"lombardi") and
+   DUPONT_ARRIVE[i] (arrival minute, same scheme as the departures above)
+   describe DUPONT[i], for the full-day sheet's arrival column.
 --------------------------------------------------------------------------- */
 const DUPONT = [380, 385, 390, 395, 400, 405, 410, 415, 420, 425, 430, 435, 440, 445, 450, 455, 460, 465, 470, 475, 480, 485, 490, 495, 500, 505, 510, 515, 520, 525, 530, 535, 540, 545, 550, 555, 560, 565, 570, 575, 580, 585, 590, 595, 600, 605, 610, 615, 625, 645, 665, 685, 705, 725, 745, 765, 785, 805, 825, 845, 865, 885, 905, 920, 925, 930, 935, 940, 945, 950, 955, 960, 965, 970, 975, 980, 985, 990, 995, 1000, 1005, 1010, 1015, 1020, 1025, 1030, 1035, 1040, 1045, 1050, 1055, 1060, 1065, 1070, 1075, 1080, 1085, 1090, 1095, 1100, 1105, 1110, 1115, 1120, 1125, 1130, 1135, 1140, 1145, 1150, 1155, 1160, 1170, 1190, 1210, 1230, 1250, 1270, 1290, 1310, 1330, 1350, 1370, 1390, 1410, 1430, 1450];
 
 const BTA = [365, 375, 385, 395, 405, 415, 425, 435, 445, 455, 465, 475, 485, 495, 505, 515, 525, 535, 545, 555, 565, 575, 585, 595, 605, 645, 685, 725, 765, 805, 845, 885, 905, 915, 925, 935, 945, 955, 965, 975, 985, 995, 1005, 1015, 1025, 1035, 1045, 1055, 1065, 1075, 1085, 1095, 1105, 1115, 1125, 1135, 1150, 1190, 1230, 1270, 1310, 1350, 1390, 1430];
 
 const LOMBARDI = [360, 370, 380, 390, 400, 410, 420, 430, 440, 450, 460, 470, 480, 490, 500, 510, 520, 530, 540, 550, 560, 570, 580, 590, 625, 665, 705, 745, 785, 825, 865, 900, 910, 920, 930, 940, 950, 960, 970, 980, 990, 1000, 1010, 1020, 1030, 1040, 1050, 1060, 1070, 1080, 1090, 1100, 1110, 1120, 1130, 1140, 1170, 1210, 1250, 1290, 1330, 1370, 1410];
+
+const DUPONT_TO = ["lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta", "lombardi", "bta"];
+
+const DUPONT_ARRIVE = [400, 405, 410, 415, 420, 425, 430, 435, 440, 445, 450, 455, 460, 465, 470, 475, 480, 485, 490, 495, 500, 505, 510, 515, 520, 525, 530, 535, 540, 545, 550, 555, 560, 565, 570, 575, 580, 585, 590, 595, 600, 605, 610, 615, 620, 625, 630, 635, 645, 665, 715, 715, 725, 745, 765, 785, 805, 825, 845, 865, 885, 905, 925, 940, 945, 950, 955, 960, 965, 970, 975, 980, 985, 990, 995, 1000, 1005, 1010, 1015, 1020, 1025, 1030, 1035, 1040, 1045, 1050, 1055, 1060, 1065, 1070, 1075, 1080, 1085, 1090, 1095, 1100, 1105, 1110, 1115, 1120, 1125, 1130, 1135, 1140, 1145, 1150, 1155, 1160, 1165, 1170, 1175, 1180, 1190, 1210, 1230, 1250, 1270, 1290, 1310, 1330, 1350, 1370, 1390, 1410, 1430, 1450, 1470];
 
 /* How long it takes you to walk to each stop. The countdown then tells you
    when to LEAVE, not when the bus arrives. Set a stop to 0 to count down to
@@ -154,9 +269,10 @@ const SPRINT_MIN = 5;
 
 /* Card order. Dupont first: it is the stop you catch, not a campus end. */
 const BOARDS = [
-  { key: "dupont",   name: "Dupont Circle",   sub: "20th & Mass Ave", times: DUPONT,   primary: true },
-  { key: "bta",      name: "Bus Turnaround",  sub: "BTA, main campus",            times: BTA },
-  { key: "lombardi", name: "Lombardi Circle", sub: "Lombardi Cancer Center",      times: LOMBARDI },
+  { key: "dupont",   name: "Dupont Circle",   sub: "20th & Mass Ave", times: DUPONT,
+    to: DUPONT_TO, arrive: DUPONT_ARRIVE, primary: true },
+  { key: "bta",      name: "Bus Turnaround",  sub: "BTA, main campus",       times: BTA },
+  { key: "lombardi", name: "Lombardi Circle", sub: "Lombardi Cancer Center", times: LOMBARDI },
 ];
 
 const TZ = "America/New_York";
@@ -241,6 +357,27 @@ function activeSpanEnd(times, now) {
   return null;
 }
 
+/* Every departure from `now` through `cap` (inclusive), for the full-day
+   sheet -- so "today" means the rest of the *current service day*, matching
+   what the card itself is counting down against, rather than the calendar
+   date. `idx` and `d` (the day offset applied) go along with each entry so
+   the caller can look up a Dupont trip's paired arrival by the same index and
+   reconstruct its absolute time with the same offset. */
+function remainingToday(times, now, cap) {
+  const base = midnightOf(now), out = [];
+  for (let d = -1; d <= 2; d++) {
+    const dow = new Date(base + d * DAY_S * 1000).getUTCDay();
+    if (dow === 0 || dow === 6) continue;
+    for (let idx = 0; idx < times.length; idx++) {
+      const t = d * DAY_S + times[idx] * 60;
+      if (t < now.sec) continue;
+      if (t > cap) return out;      // (d, idx) advance in step with t, so once
+      out.push({ t, idx, d });      // past the cap, nothing later qualifies either.
+    }
+  }
+  return out;
+}
+
 /* ---- formatting ---------------------------------------------------------- */
 
 function clock(t) {
@@ -260,6 +397,11 @@ const colourFor = (mins) => mins > 5 ? "var(--go)" : mins >= 2 ? "var(--soon)" :
 
 const clockEl = document.getElementById("clock");
 const simEl = document.getElementById("sim");
+const sheetBackdrop = document.getElementById("sheetBackdrop");
+const sheetTitle = document.getElementById("sheetTitle");
+const sheetSub = document.getElementById("sheetSub");
+const sheetBody = document.getElementById("sheetBody");
+const sheetClose = document.getElementById("sheetClose");
 
 /* The cards are in the HTML rather than built here, so the page still shows the
    three stops if this script never runs, and the warning above says why. */
@@ -270,11 +412,22 @@ const cards = BOARDS.map((b) => {
   if (walk > 0) { badge.textContent = walk + " min walk"; badge.hidden = false; }
   return {
     el, board: b, walkSec: walk * 60, sprintSec: SPRINT_MIN * 60, showLeave: walk > 0,
-    num: el.querySelector(".num"), unit: el.querySelector(".unit"),
-    lbl: el.querySelector(".lbl"), dep: el.querySelector(".dep"),
-    sprint: el.querySelector(".sprint"), then: el.querySelector(".then"),
+    board_: el.querySelector(".board"), lbl: el.querySelector(".lbl"),
+    row1: el.querySelector(".row1"), time1: el.querySelector(".time1"),
+    row2: el.querySelector(".row2"), time2: el.querySelector(".time2"),
+    off: el.querySelector(".off"), offtime: el.querySelector(".offtime"),
+    sprint: el.querySelector(".sprint"),
   };
 });
+for (const c of cards) {
+  c.cd = c.row1.querySelector(".cd"); c.cdu = c.row1.querySelector(".cdu");
+  c.cd2 = c.row2.querySelector(".cd"); c.cdu2 = c.row2.querySelector(".cdu");
+}
+
+/* Which board's sheet is open, if any -- kept so render() can refresh its
+   clock-derived contents (what counts as "remaining" ticks forward too) on
+   the same one-second cadence as the cards, without a second timer. */
+let openBoard = null;
 
 function render() {
   const now = nowET();
@@ -290,24 +443,22 @@ function render() {
 
   for (const c of cards) {
     // The list may open with buses you are already late for but could still run
-    // for. The big number always tracks the first one you can make at a walk --
-    // with buses every five minutes and a quarter-hour walk, leading with the
+    // for. Row 1 always tracks the first one you can make at a walk -- with
+    // buses every five minutes and a quarter-hour walk, leading with the
     // sprint would mean the card nagged you to run all day.
     const list = upcoming(c.board.times, c.walkSec, c.sprintSec, now, 5);
     const i = list.findIndex((t) => t - now.sec - c.walkSec >= 0);
 
     if (i < 0) {                                         // never happens with a
-      c.el.classList.remove("off");                      // Mon-Fri timetable, but
-      c.num.textContent = "—";                           // do not render junk
-      c.num.className = "num word";
-      c.unit.textContent = ""; c.lbl.textContent = "";
-      c.dep.textContent = ""; c.then.textContent = "";
+      c.off.hidden = true;                                // Mon-Fri timetable, but
+      c.row1.hidden = false; c.row2.hidden = true;        // do not render junk
+      c.lbl.textContent = ""; c.cd.textContent = "—"; c.cd.className = "cd word";
+      c.cdu.textContent = ""; c.time1.textContent = "";
       c.sprint.hidden = true;
       continue;
     }
 
     const next = list.slice(i);
-    const after = next.slice(1, 3).map(clock).join("  ·  ");
 
     // An earlier bus still inside the sprint window: worth offering, since
     // catching it can save a twenty-minute wait in the sparser hours.
@@ -326,34 +477,125 @@ function render() {
     const spanEnd = activeSpanEnd(c.board.times, now);
     const running = spanEnd !== null && next[0] <= spanEnd;
     if (!running && next[0] - now.sec > LEAD_IN_S) {
-      c.el.classList.add("off");
-      c.num.textContent = "No service";
-      c.num.className = "num word";
-      c.num.style.setProperty("--c", "var(--muted)");
-      c.unit.textContent = "";
-      c.lbl.textContent = "next";
-      c.dep.textContent = weekday(now, next[0]) + " " + clock(next[0]);
+      c.row1.hidden = true; c.row2.hidden = true;
+      c.off.hidden = false;
+      c.offtime.textContent = weekday(now, next[0]) + " " + clock(next[0]);
       // Do not claim the day is over while a bus is still coming that you
-      // cannot reach in time. If a run would catch it the sprint line above
-      // already says so; otherwise name it here, for someone already at the stop.
+      // cannot reach in time. The sprint line above already covers a run
+      // still worth taking; this is for someone already at the stop.
       const missed = c.walkSec && i === 0 ? upcoming(c.board.times, 0, 0, now, 1)[0] : undefined;
-      c.then.textContent = missed !== undefined && missed < next[0]
-        ? clock(missed) + " bus is closer than your " + (c.walkSec / 60) + " min walk"
-        : after ? "then " + after : "";
+      if (missed !== undefined && missed < next[0]) {
+        c.sprint.hidden = false;
+        c.sprint.textContent = clock(missed) + " bus is closer than your " + (c.walkSec / 60) + " min walk";
+      }
       continue;
     }
 
-    c.el.classList.remove("off");
-    const mins = Math.floor((next[0] - now.sec - c.walkSec) / 60);   // >= 0 by construction
-    c.num.textContent = mins === 0 ? "Now" : String(mins);
-    c.num.className = "num" + (mins === 0 ? " word" : "");
-    c.num.style.setProperty("--c", colourFor(mins));
-    c.unit.textContent = mins === 0 ? "" : "min";
-    c.unit.style.setProperty("--c", colourFor(mins));
+    c.off.hidden = true;
+    c.row1.hidden = false;
     c.lbl.textContent = c.showLeave ? "leave in" : "departs in";
-    c.dep.textContent = "bus " + clock(next[0]);
-    c.then.textContent = after ? "then " + after : "";
+
+    const mins1 = Math.floor((next[0] - now.sec - c.walkSec) / 60);   // >= 0 by construction
+    c.cd.textContent = mins1 === 0 ? "Now" : String(mins1);
+    c.cd.className = "cd" + (mins1 === 0 ? " word" : "");
+    c.cd.style.setProperty("--c", colourFor(mins1));
+    c.cdu.textContent = mins1 === 0 ? "" : "min";
+    c.cdu.style.setProperty("--c", colourFor(mins1));
+    c.time1.textContent = clock(next[0]);
+
+    if (next.length > 1) {
+      const mins2 = Math.floor((next[1] - now.sec - c.walkSec) / 60);
+      c.row2.hidden = false;
+      c.cd2.textContent = mins2 === 0 ? "Now" : String(mins2);
+      c.cd2.style.setProperty("--c", colourFor(mins2));
+      c.cdu2.textContent = mins2 === 0 ? "" : "min";
+      c.cdu2.style.setProperty("--c", colourFor(mins2));
+      c.time2.textContent = clock(next[1]);
+    } else {
+      c.row2.hidden = true;
+    }
   }
+
+  if (openBoard) renderSheet(openBoard);
+}
+
+/* ---- the full-day sheet --------------------------------------------------- */
+
+function renderSheet(c) {
+  const now = nowET();
+  sheetTitle.textContent = c.board.name;
+
+  const spanEnd = activeSpanEnd(c.board.times, now);
+  if (spanEnd === null) {
+    const nxt = upcoming(c.board.times, 0, 0, now, 1)[0];
+    sheetSub.textContent = "No service right now";
+    sheetBody.innerHTML = "";
+    const p = document.createElement("p");
+    p.className = "sheet-empty";
+    p.textContent = "Next: " + weekday(now, nxt) + " " + clock(nxt);
+    sheetBody.appendChild(p);
+    return;
+  }
+
+  const items = remainingToday(c.board.times, now, spanEnd);
+  if (!items.length) {
+    sheetSub.textContent = "Rest of today";
+    sheetBody.innerHTML = "";
+    const p = document.createElement("p");
+    p.className = "sheet-empty";
+    p.textContent = "No more departures today.";
+    sheetBody.appendChild(p);
+    return;
+  }
+  sheetSub.textContent = items.length + " more today";
+
+  const isDupont = c.board.key === "dupont";
+  const grid = document.createElement("div");
+  grid.className = "sheet-grid " + (isDupont ? "g2" : "g3");
+  for (const { t, idx, d } of items) {
+    const cell = document.createElement("div");
+    cell.className = "sheet-cell";
+    if (isDupont) {
+      const to = c.board.to[idx] === "bta" ? "BTA" : "Lombardi";
+      const arrT = d * DAY_S + c.board.arrive[idx] * 60;
+      cell.innerHTML =
+        '<span class="sc-dep">' + clock(t) + '</span>' +
+        '<span class="sc-arr">&rarr; ' + to + " " + clock(arrT) + "</span>";
+    } else {
+      cell.innerHTML = '<span class="sc-dep">' + clock(t) + "</span>";
+    }
+    grid.appendChild(cell);
+  }
+  sheetBody.innerHTML = "";
+  sheetBody.appendChild(grid);
+}
+
+function openSheet(c) {
+  openBoard = c;
+  renderSheet(c);
+  sheetBackdrop.hidden = false;
+}
+
+function closeSheet() {
+  openBoard = null;
+  sheetBackdrop.hidden = true;
+}
+
+for (const c of cards) {
+  c.board_.addEventListener("click", () => openSheet(c));
+  c.board_.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSheet(c); }
+  });
+}
+sheetClose.addEventListener("click", closeSheet);
+sheetBackdrop.addEventListener("click", (e) => { if (e.target === sheetBackdrop) closeSheet(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && openBoard) closeSheet(); });
+
+/* Test-only: exposes internals to test_guts.js, which pre-defines
+   __gutsInternal on its stub sandbox before running this script. A real
+   browser never defines that global, so this is always a no-op there. */
+if (typeof __gutsInternal !== "undefined") {
+  Object.assign(__gutsInternal, { upcoming, remainingToday, activeSpanEnd, clock, weekday, BOARDS });
 }
 
 document.getElementById("jswarn").hidden = true;   // the script is evidently running
@@ -364,6 +606,7 @@ if (typeof navigator !== "undefined" && "serviceWorker" in navigator &&
     location.protocol.startsWith("http")) {
   navigator.serviceWorker.register("sw.js").catch(() => {});
 }
+
 render();
 /* Tick on the second, and refresh the moment the app comes back to the front. */
 setInterval(render, 1000);

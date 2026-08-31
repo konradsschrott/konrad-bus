@@ -62,13 +62,18 @@ def parse(path):
             continue
         rows.append(cells)
 
-    cols = []
+    # by_row[col][r] is that cell's resolved value, or None where the source
+    # printed a dash -- kept row-indexed (rather than the dash rows just
+    # dropped) so a Dupont row can still be paired with whichever side of the
+    # trip it belongs to, further down.
+    by_row = [[None] * len(rows) for _ in range(5)]
     for col in range(5):
-        prev, times = 0, []
-        for row, cells in enumerate(rows, 1):
+        prev = 0
+        for r, cells in enumerate(rows):
             tok = cells[col]
             if tok in DASHES:
                 continue
+            row = r + 1
             # Each column runs forward through the service day, so resolve every
             # cell to the next time at or after the previous one. Where a cell has
             # two readings, keep the one that makes the smallest forward step --
@@ -85,20 +90,38 @@ def parse(path):
                 notes.append(f"row {row:>3} {COLUMNS[col]:<15} {tok!r} -> {fmt(v)} (meridiem corrected)")
             elif v >= DAY:
                 notes.append(f"row {row:>3} {COLUMNS[col]:<15} {tok!r} -> {fmt(v)} next day (offset {v})")
-            times.append(v)
+            by_row[col][r] = v
             prev = v
-        cols.append(times)
-    return cols
+    return by_row
 
 
-cols = parse("schedule.txt")
+by_row = parse("schedule.txt")
+cols = [[v for v in col if v is not None] for col in by_row]
 for i, c in enumerate(cols):
     gaps = [b - a for a, b in zip(c, c[1:])]
     assert all(g > 0 for g in gaps), f"{COLUMNS[i]} not strictly increasing"
     print(f"// {COLUMNS[i]}: {len(c)} times, {fmt(c[0])}-{fmt(c[-1])}, max gap {max(gaps)} min",
           file=sys.stderr)
 
+# Each trip departs from BTA or Lombardi, calls at Dupont, and returns to
+# that same point -- so a Dupont row's own BTA/Lombardi cell is a dash, but
+# exactly one of the two arrival columns on that row is not, and that is
+# where boarding at Dupont takes you. Zipped here in Dupont's own row order,
+# so index i of DUPONT_TO / DUPONT_ARRIVE describes DUPONT[i].
+DUPONT_TO, DUPONT_ARRIVE = [], []
+for r in range(len(by_row[0])):
+    if by_row[3][r] is not None:
+        DUPONT_TO.append("bta"); DUPONT_ARRIVE.append(by_row[3][r])
+    elif by_row[4][r] is not None:
+        DUPONT_TO.append("lombardi"); DUPONT_ARRIVE.append(by_row[4][r])
+    else:
+        sys.exit(f"row {r + 1}: Dupont trip has no arrival on either side")
+assert len(DUPONT_TO) == len(cols[2]), "Dupont row count does not match its arrival pairing"
+
 print("\n".join("// " + n for n in notes), file=sys.stderr)
 for name, idx in zip(["DUPONT", "BTA", "LOMBARDI"], BOARDS):
     body = ", ".join(str(v) for v in cols[idx])
     print(f"const {name} = [{body}];\n")
+
+print("const DUPONT_TO = [" + ", ".join('"%s"' % v for v in DUPONT_TO) + "];\n")
+print("const DUPONT_ARRIVE = [" + ", ".join(str(v) for v in DUPONT_ARRIVE) + "];\n")
