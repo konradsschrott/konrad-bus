@@ -16,8 +16,11 @@ function mkEl() {
   const cls = new Set();
   return {
     _t: "", className: "", style: { setProperty() {}, display: "" }, children: [],
-    classList: { add: (c) => cls.add(c), remove: (c) => cls.delete(c), contains: (c) => cls.has(c) },
-    hidden: false, remove() {}, addEventListener() {}, focus() {},
+    classList: {
+      add: (c) => cls.add(c), remove: (c) => cls.delete(c), contains: (c) => cls.has(c),
+      toggle: (c, on) => { (on ?? !cls.has(c)) ? cls.add(c) : cls.delete(c); },
+    },
+    hidden: false, checked: false, remove() {}, addEventListener() {}, focus() {},
     set textContent(v) { this._t = String(v); }, get textContent() { return this._t; },
     set innerHTML(v) { this._h = v; }, get innerHTML() { return this._h || ""; },
     appendChild(c) { this.children.push(c); return c; },
@@ -55,6 +58,14 @@ function run(query, nowMs = Date.now()) {
   vm.createContext(sandbox);
   vm.runInContext(body, sandbox);
 
+  return { clock: byId.clock._t, jswarnHidden: byId.jswarn.hidden, cards: readCards(cardEls), cardEls, internal };
+}
+
+/* Reads the same summary out of a data-key -> stub-card-element map that
+   run() uses for its own return value. Factored out so a test can flip a
+   switch on a raw card element, call the exposed render() again (see the
+   on-my-way block below), and re-read the result the same way. */
+function readCards(cardEls) {
   const cards = {};
   for (const [key, el] of Object.entries(cardEls)) {
     const q = el._q || {};
@@ -72,9 +83,11 @@ function run(query, nowMs = Date.now()) {
       offHidden: q[".off"] ? q[".off"].hidden : true,
       offtime: (q[".offtime"] || {})._t || "",
       sprint: sprintEl && !sprintEl.hidden ? sprintEl._t : "",
+      badgeHidden: q[".badge"] ? q[".badge"].hidden : true,
+      walking: el.classList.contains("walking"),
     };
   }
-  return { clock: byId.clock._t, jswarnHidden: byId.jswarn.hidden, cards, internal };
+  return cards;
 }
 
 const at = (t) => run("?t=" + t);
@@ -157,6 +170,43 @@ assert.strictEqual(at("2026-09-01T10:36").cards[DUPONT].sprint, "");
 assert.strictEqual(peak.row2Hidden, false);
 assert.strictEqual(peak.time2, "8:30 AM");
 assert.strictEqual(peak.cd2, "5");
+
+/* --- "on my way": the Dupont-only switch that drops the walk offset ------ */
+{
+  const r = at("2026-09-01T08:12:30");
+  assert.strictEqual(r.cards[DUPONT].walking, false, "green/leave-from-home is the default");
+  assert.strictEqual(r.cards[DUPONT].badgeHidden, false);   // "15 min walk" showing
+
+  const dupontInternal = r.internal.cards.find((c) => c.board.key === "dupont");
+  dupontInternal.onwayInput.checked = true;
+  r.internal.render();                                // same call the real switch's change fires
+  const onWay = readCards(r.cardEls).dupont;
+
+  assert.strictEqual(onWay.walking, true);
+  assert.strictEqual(onWay.badgeHidden, true);         // nothing to walk, nothing to show
+  assert.strictEqual(onWay.lbl, "departs in");          // matches the zero-walk stops' wording
+  assert.strictEqual(onWay.sprint, "");                 // nothing to be late for once walk = 0
+
+  // With the walk offset gone, the two rows must show Dupont's own next two
+  // departures verbatim -- not BTA's, whose schedule is unrelated; only the
+  // walk padding disappears, not which stop's timetable is in play.
+  const now = { y: 2026, mo: 9, d: 1, sec: 8 * 3600 + 12 * 60 + 30 };  // 08:12:30
+  const dupontTimes = r.internal.BOARDS.find((b) => b.key === "dupont").times;
+  // .clock() returns a plain string (a primitive), so comparing element-by-
+  // element sidesteps vm's cross-realm Array identity rather than fighting it.
+  const raw = r.internal.upcoming(dupontTimes, 0, 0, now, 2).map(r.internal.clock);
+  assert.strictEqual(onWay.time1, raw[0]);
+  assert.strictEqual(onWay.time2, raw[1]);
+  assert.strictEqual(onWay.cd1, "2");   // 8:15 is 2 min out at 8:12:30, no walk to add
+
+  // Flipping back restores the walk-adjusted view without a page reload.
+  dupontInternal.onwayInput.checked = false;
+  r.internal.render();
+  const back = readCards(r.cardEls).dupont;
+  assert.strictEqual(back.walking, false);
+  assert.strictEqual(back.time1, r.cards[DUPONT].time1);
+  assert.strictEqual(back.lbl, "leave in");
+}
 
 // Weekends and the small hours fall back to the next scheduled departure, with
 // both countdown rows hidden behind the off block.

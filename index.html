@@ -45,6 +45,7 @@
   .card {
     flex: 1 1 0; min-height: 84px; background: var(--card); border: 1px solid var(--line);
     border-radius: 16px; padding: 10px 14px; display: flex; flex-direction: column; justify-content: center;
+    transition: background .2s ease, border-color .2s ease;
   }
   .card.primary { flex: 1.32 1 0; }
   .hd { display: flex; align-items: baseline; gap: 8px; flex: none; }
@@ -52,10 +53,49 @@
           flex: none; white-space: nowrap; }
   .sub { font-size: 11px; color: var(--muted); min-width: 0;
          overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Groups the badge and (Dupont only) the on-my-way switch flush right, as one
+     unit -- so the switch stays put when the badge hides itself (walk = 0). */
+  .hd-right { margin-left: auto; flex: none; display: flex; align-items: center; gap: 7px; }
   .badge {
-    margin-left: auto; flex: none; font-size: 10.5px; font-weight: 600; color: var(--muted);
+    flex: none; font-size: 10.5px; font-weight: 600; color: var(--muted);
     border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; white-space: nowrap;
   }
+
+  /* Dupont only: an iOS-style switch for "I've already left the house" --
+     flips the card from the walk-adjusted leave-time view (green, the
+     default) to the plain bus-time view the campus stops already use (grey),
+     since once you're out the door the walk offset only gets in the way. */
+  .onway { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+  .onway-txt {
+    font-size: 9px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .06em; white-space: nowrap;
+  }
+  .onway-cb { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .onway-track {
+    position: relative; width: 32px; height: 19px; border-radius: 999px; flex: none;
+    background: #3a4553; transition: background .18s ease;
+  }
+  .onway-knob {
+    position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; border-radius: 50%;
+    background: #f4f7fb; transition: transform .18s ease; box-shadow: 0 1px 2px rgba(0, 0, 0, .4);
+  }
+  .onway-cb:checked + .onway-track { background: var(--go); }
+  .onway-cb:checked + .onway-track .onway-knob { transform: translateX(13px); }
+  .onway-cb:focus-visible + .onway-track { outline: 2px solid var(--go); outline-offset: 2px; }
+
+  /* Below ~410px the header has no room for both the address subtitle and a
+     text label beside the switch -- not even with the subtitle collapsed to
+     nothing. The switch alone (its colour and position, beside "Dupont
+     Circle") still reads fine without a caption, so the label gives way. */
+  @media (max-width: 410px) {
+    .onway-txt { display: none; }
+  }
+
+  /* The green is the default (you're still at home, deciding when to leave);
+     flipping the switch above drops it back to the same grey the other two
+     cards use, since "on my way" has nothing left to signal urgently. */
+  .card.primary { background: #11301f; border-color: #1c4a30; }
+  .card.primary.walking { background: var(--card); border-color: var(--line); }
 
   /* The tap target: a plain block, not a real <button>, so it is free of UA
      chrome, with the pieces of a row laid out left (countdown) / right
@@ -154,7 +194,16 @@
     (iOS Quick Look) will not run it &mdash; open the page in a browser instead.</div>
   <div class="cards" id="cards">
   <section class="card primary" data-key="dupont">
-    <div class="hd"><span class="stop">Dupont Circle</span><span class="sub">20th &amp; Mass Ave</span><span class="badge" hidden></span></div>
+    <div class="hd"><span class="stop">Dupont Circle</span><span class="sub">20th &amp; Mass Ave</span>
+      <span class="hd-right">
+        <span class="badge" hidden></span>
+        <label class="onway">
+          <span class="onway-txt">On my way</span>
+          <input type="checkbox" class="onway-cb" role="switch">
+          <span class="onway-track"><span class="onway-knob"></span></span>
+        </label>
+      </span>
+    </div>
     <div class="board" tabindex="0" role="button" aria-haspopup="dialog">
       <span class="lbl"></span>
       <span class="row row1">
@@ -173,7 +222,7 @@
     <div class="sprint" hidden></div>
   </section>
   <section class="card" data-key="bta">
-    <div class="hd"><span class="stop">Bus Turnaround</span><span class="sub">BTA, main campus</span><span class="badge" hidden></span></div>
+    <div class="hd"><span class="stop">Bus Turnaround</span><span class="sub">BTA, main campus</span><span class="hd-right"><span class="badge" hidden></span></span></div>
     <div class="board" tabindex="0" role="button" aria-haspopup="dialog">
       <span class="lbl"></span>
       <span class="row row1">
@@ -192,7 +241,7 @@
     <div class="sprint" hidden></div>
   </section>
   <section class="card" data-key="lombardi">
-    <div class="hd"><span class="stop">Lombardi Circle</span><span class="sub">Lombardi Cancer Center</span><span class="badge" hidden></span></div>
+    <div class="hd"><span class="stop">Lombardi Circle</span><span class="sub">Lombardi Cancer Center</span><span class="hd-right"><span class="badge" hidden></span></span></div>
     <div class="board" tabindex="0" role="button" aria-haspopup="dialog">
       <span class="lbl"></span>
       <span class="row row1">
@@ -408,10 +457,12 @@ const sheetClose = document.getElementById("sheetClose");
 const cards = BOARDS.map((b) => {
   const el = document.querySelector('.card[data-key="' + b.key + '"]');
   const walk = WALK_MIN[b.key] | 0;
-  const badge = el.querySelector(".badge");
-  if (walk > 0) { badge.textContent = walk + " min walk"; badge.hidden = false; }
   return {
-    el, board: b, walkSec: walk * 60, sprintSec: SPRINT_MIN * 60, showLeave: walk > 0,
+    // walkSec is the BASE walk time; render() derives the effective one each
+    // tick from the on-my-way switch (Dupont only -- onwayInput is null, and
+    // so effectively always off, for the other two boards).
+    el, board: b, walkSec: walk * 60, sprintSec: SPRINT_MIN * 60,
+    badge: el.querySelector(".badge"), onwayInput: el.querySelector(".onway-cb"),
     board_: el.querySelector(".board"), lbl: el.querySelector(".lbl"),
     row1: el.querySelector(".row1"), time1: el.querySelector(".time1"),
     row2: el.querySelector(".row2"), time2: el.querySelector(".time2"),
@@ -442,12 +493,31 @@ function render() {
   }
 
   for (const c of cards) {
+    // "On my way" (Dupont only) drops the walk offset entirely -- once you're
+    // out the door there's nothing left to pad for, so the card counts down
+    // to the bus itself, same as the two campus stops always do. The card's
+    // whole background follows the switch: green while still deciding when
+    // to leave, back to the ordinary grey once you've checked "on my way".
+    const onWay = c.onwayInput ? c.onwayInput.checked : false;
+    // Named distinctly from the .onway switch-label class below -- reusing
+    // that name here once made every ".onway" match (the card included) pick
+    // up the label's own flex styling, which broke the card's own layout.
+    if (c.onwayInput) c.el.classList.toggle("walking", onWay);
+    const walkSec = onWay ? 0 : c.walkSec;
+    const showLeave = walkSec > 0;
+
+    if (c.badge) {
+      const walkMin = Math.round(walkSec / 60);
+      c.badge.hidden = walkMin === 0;
+      if (walkMin > 0) c.badge.textContent = walkMin + " min walk";
+    }
+
     // The list may open with buses you are already late for but could still run
     // for. Row 1 always tracks the first one you can make at a walk -- with
     // buses every five minutes and a quarter-hour walk, leading with the
     // sprint would mean the card nagged you to run all day.
-    const list = upcoming(c.board.times, c.walkSec, c.sprintSec, now, 5);
-    const i = list.findIndex((t) => t - now.sec - c.walkSec >= 0);
+    const list = upcoming(c.board.times, walkSec, c.sprintSec, now, 5);
+    const i = list.findIndex((t) => t - now.sec - walkSec >= 0);
 
     if (i < 0) {                                         // never happens with a
       c.off.hidden = true;                                // Mon-Fri timetable, but
@@ -464,7 +534,7 @@ function render() {
     // catching it can save a twenty-minute wait in the sparser hours.
     if (i > 0) {
       const runFor = list[0];
-      const lateBy = Math.ceil((now.sec + c.walkSec - runFor) / 60);
+      const lateBy = Math.ceil((now.sec + walkSec - runFor) / 60);
       c.sprint.textContent = "Run for " + clock(runFor) + " · left " + lateBy + " min ago";
       c.sprint.hidden = false;
     } else {
@@ -483,19 +553,19 @@ function render() {
       // Do not claim the day is over while a bus is still coming that you
       // cannot reach in time. The sprint line above already covers a run
       // still worth taking; this is for someone already at the stop.
-      const missed = c.walkSec && i === 0 ? upcoming(c.board.times, 0, 0, now, 1)[0] : undefined;
+      const missed = walkSec && i === 0 ? upcoming(c.board.times, 0, 0, now, 1)[0] : undefined;
       if (missed !== undefined && missed < next[0]) {
         c.sprint.hidden = false;
-        c.sprint.textContent = clock(missed) + " bus is closer than your " + (c.walkSec / 60) + " min walk";
+        c.sprint.textContent = clock(missed) + " bus is closer than your " + (walkSec / 60) + " min walk";
       }
       continue;
     }
 
     c.off.hidden = true;
     c.row1.hidden = false;
-    c.lbl.textContent = c.showLeave ? "leave in" : "departs in";
+    c.lbl.textContent = showLeave ? "leave in" : "departs in";
 
-    const mins1 = Math.floor((next[0] - now.sec - c.walkSec) / 60);   // >= 0 by construction
+    const mins1 = Math.floor((next[0] - now.sec - walkSec) / 60);   // >= 0 by construction
     c.cd.textContent = mins1 === 0 ? "Now" : String(mins1);
     c.cd.className = "cd" + (mins1 === 0 ? " word" : "");
     c.cd.style.setProperty("--c", colourFor(mins1));
@@ -504,7 +574,7 @@ function render() {
     c.time1.textContent = clock(next[0]);
 
     if (next.length > 1) {
-      const mins2 = Math.floor((next[1] - now.sec - c.walkSec) / 60);
+      const mins2 = Math.floor((next[1] - now.sec - walkSec) / 60);
       c.row2.hidden = false;
       c.cd2.textContent = mins2 === 0 ? "Now" : String(mins2);
       c.cd2.style.setProperty("--c", colourFor(mins2));
@@ -586,6 +656,9 @@ for (const c of cards) {
   c.board_.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSheet(c); }
   });
+  // Re-render at once on flip, rather than waiting up to a second for the
+  // next tick, so the green/grey switch feels immediate.
+  if (c.onwayInput) c.onwayInput.addEventListener("change", render);
 }
 sheetClose.addEventListener("click", closeSheet);
 sheetBackdrop.addEventListener("click", (e) => { if (e.target === sheetBackdrop) closeSheet(); });
@@ -595,7 +668,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape" && openBoar
    __gutsInternal on its stub sandbox before running this script. A real
    browser never defines that global, so this is always a no-op there. */
 if (typeof __gutsInternal !== "undefined") {
-  Object.assign(__gutsInternal, { upcoming, remainingToday, activeSpanEnd, clock, weekday, BOARDS });
+  Object.assign(__gutsInternal, { upcoming, remainingToday, activeSpanEnd, clock, weekday, BOARDS, cards, render });
 }
 
 document.getElementById("jswarn").hidden = true;   // the script is evidently running
