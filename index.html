@@ -493,17 +493,16 @@ function render() {
   }
 
   for (const c of cards) {
-    // "On my way" (Dupont only) drops the walk offset entirely -- once you're
-    // out the door there's nothing left to pad for, so the card counts down
-    // to the bus itself, same as the two campus stops always do. The card's
-    // whole background follows the switch: green while still deciding when
-    // to leave, back to the ordinary grey once you've checked "on my way".
+    // "On my way" (Dupont only): checking it adds the walk back in, for
+    // whenever you want the padded leave-by time rather than the bus's own
+    // schedule. The card's whole background follows the switch: green while
+    // padding for the walk, back to the ordinary grey once unchecked.
     const onWay = c.onwayInput ? c.onwayInput.checked : false;
     // Named distinctly from the .onway switch-label class below -- reusing
     // that name here once made every ".onway" match (the card included) pick
     // up the label's own flex styling, which broke the card's own layout.
-    if (c.onwayInput) c.el.classList.toggle("walking", onWay);
-    const walkSec = onWay ? 0 : c.walkSec;
+    if (c.onwayInput) c.el.classList.toggle("walking", !onWay);
+    const walkSec = onWay ? c.walkSec : 0;
     const showLeave = walkSec > 0;
 
     if (c.badge) {
@@ -679,7 +678,6 @@ if (typeof navigator !== "undefined" && "serviceWorker" in navigator &&
     location.protocol.startsWith("http")) {
   navigator.serviceWorker.register("sw.js").catch(() => {});
 }
-
 render();
 /* Tick on the second, and refresh the moment the app comes back to the front. */
 setInterval(render, 1000);

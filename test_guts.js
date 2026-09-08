@@ -93,6 +93,19 @@ function readCards(cardEls) {
 const at = (t) => run("?t=" + t);
 const DUPONT = "dupont", BTA = "bta", LOMB = "lombardi";
 
+// Dupont's "on my way" switch gates the walk-adjusted view: unchecked (the
+// default) shows the plain schedule, same as BTA/Lombardi; checking it adds
+// WALK_MIN back in. Tests that exercise that walk/sprint logic need it
+// checked first -- this does that and re-reads the card the same way run()
+// does, for a given ?t= moment.
+function atLeave(t) {
+  const r = at(t);
+  const c = r.internal.cards.find((c) => c.board.key === "dupont");
+  c.onwayInput.checked = true;
+  r.internal.render();
+  return { ...r, cards: readCards(r.cardEls) };
+}
+
 const cases = [
   ["first bus of the day",       "2026-09-01T05:55"],
   ["just before first Dupont",   "2026-09-01T06:09"],
@@ -120,8 +133,9 @@ for (const [name, t] of cases) {
 /* --- invariants ---------------------------------------------------------- */
 
 // Sweep a whole service day: never "0 min" on either row, row 2 (when shown)
-// is never earlier than row 1, never a sprint at a stop with no walk to make
-// up, and never a sprint offered more than SPRINT_MIN past the ideal leave time.
+// is never earlier than row 1, and no stop offers a sprint with no walk to
+// make up -- with the switch at its default, that now includes Dupont too;
+// its own sprint window is swept separately below, with "on my way" checked.
 for (let m = 0; m < 24 * 60; m++) {
   const t = "2026-09-01T" + String((m / 60) | 0).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
   const cards = at(t).cards;
@@ -130,26 +144,41 @@ for (let m = 0; m < 24 * 60; m++) {
     assert.notStrictEqual(c.cd1, "0", "0 min (row1) at " + t);
     if (!c.row2Hidden) assert.notStrictEqual(c.cd2, "0", "0 min (row2) at " + t);
   }
-  for (const stop of [BTA, LOMB]) assert.strictEqual(cards[stop].sprint, "", t);
-  const m2 = /left (\d+) min ago/.exec(cards[DUPONT].sprint);
-  if (m2) assert.ok(+m2[1] >= 1 && +m2[1] <= 5, cards[DUPONT].sprint + " at " + t);
+  for (const stop of [BTA, LOMB, DUPONT]) assert.strictEqual(cards[stop].sprint, "", t);
 }
 
-// 15 min walk: at 11:59:30 PM the 12:10 AM bus is only reachable at a run, and
-// there is no later one, so the board is off with the sprint still offered.
-assert.strictEqual(at("2026-09-01T23:59:30").cards[DUPONT].offHidden, false);
+// Same sweep again with "on my way" checked, since that is now where the walk
+// padding -- and the sprint offer for a bus just missed at a walk -- live.
+for (let m = 0; m < 24 * 60; m++) {
+  const t = "2026-09-01T" + String((m / 60) | 0).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+  const c = atLeave(t).cards[DUPONT];
+  if (c.offHidden) {
+    assert.notStrictEqual(c.cd1, "0", "0 min (row1, on my way) at " + t);
+    if (!c.row2Hidden) assert.notStrictEqual(c.cd2, "0", "0 min (row2, on my way) at " + t);
+  }
+  const m2 = /left (\d+) min ago/.exec(c.sprint);
+  if (m2) assert.ok(+m2[1] >= 1 && +m2[1] <= 5, c.sprint + " at " + t);
+}
 
-// A service day that starts Tuesday morning still owns the 12:10 AM Wednesday bus.
-assert.strictEqual(at("2026-09-01T23:45").cards[DUPONT].time1, "12:10 AM");
-// Friday 11:58 PM: the 12:10 AM bus is 12 minutes out and the walk is 15, so it
-// is not walkable -- but a run still catches it, and missing it costs the weekend.
-const fri = at("2026-09-04T23:58").cards[DUPONT];
+// 15 min walk (checked, "on my way"): at 11:59:30 PM the 12:10 AM bus is only
+// reachable at a run, and there is no later one, so the board is off with the
+// sprint still offered.
+assert.strictEqual(atLeave("2026-09-01T23:59:30").cards[DUPONT].offHidden, false);
+
+// A service day that starts Tuesday morning still owns the 12:10 AM Wednesday
+// bus: at a 15 min walk the 11:50 PM bus is only 5 minutes off, too soon to
+// walk for, so the next one worth leaving for is 12:10 AM.
+assert.strictEqual(atLeave("2026-09-01T23:45").cards[DUPONT].time1, "12:10 AM");
+// Friday 11:58 PM (checked): the 12:10 AM bus is 12 minutes out and the walk is
+// 15, so it is not walkable -- but a run still catches it, and missing it costs
+// the weekend.
+const fri = atLeave("2026-09-04T23:58").cards[DUPONT];
 assert.strictEqual(fri.offtime, "Monday 6:20 AM");
 assert.strictEqual(fri.sprint, "Run for 12:10 AM · left 3 min ago");
 assert.strictEqual(at("2026-08-31T00:05").cards[DUPONT].offHidden, false);     // Sunday has none
 
 // The big number is always a bus reachable at a walk, never a sprint.
-const peak = at("2026-09-01T08:10").cards[DUPONT];
+const peak = atLeave("2026-09-01T08:10").cards[DUPONT];
 assert.strictEqual(peak.cd1, "Now");
 assert.strictEqual(peak.lbl, "leave in");
 assert.strictEqual(peak.time1, "8:25 AM");              // 15 min out, walkable
@@ -157,12 +186,12 @@ assert.strictEqual(peak.sprint, "Run for 8:20 AM · left 5 min ago");
 
 // In the sparse midday hours the sprint is worth far more: running for the
 // 10:45 saves the twenty-minute wait for the 11:05.
-const midday = at("2026-09-01T10:32").cards[DUPONT];
+const midday = atLeave("2026-09-01T10:32").cards[DUPONT];
 assert.strictEqual(midday.time1, "11:05 AM");
 assert.strictEqual(midday.sprint, "Run for 10:45 AM · left 2 min ago");
 
 // Once that bus is beyond the window the offer goes away.
-assert.strictEqual(at("2026-09-01T10:36").cards[DUPONT].sprint, "");
+assert.strictEqual(atLeave("2026-09-01T10:36").cards[DUPONT].sprint, "");
 
 // Row 2: the bus after the one row 1 is counting down to, same leave-by logic.
 // At 8:10 the walk-adjusted next Dupont bus is 8:25 (row 1, "Now"); the one
@@ -171,41 +200,45 @@ assert.strictEqual(peak.row2Hidden, false);
 assert.strictEqual(peak.time2, "8:30 AM");
 assert.strictEqual(peak.cd2, "5");
 
-/* --- "on my way": the Dupont-only switch that drops the walk offset ------ */
+/* --- "on my way": the Dupont-only switch that adds the walk offset back in */
 {
   const r = at("2026-09-01T08:12:30");
-  assert.strictEqual(r.cards[DUPONT].walking, false, "green/leave-from-home is the default");
-  assert.strictEqual(r.cards[DUPONT].badgeHidden, false);   // "15 min walk" showing
+  assert.strictEqual(r.cards[DUPONT].walking, true, "grey/plain-schedule is the default");
+  assert.strictEqual(r.cards[DUPONT].badgeHidden, true);    // nothing to walk, nothing to show
+  assert.strictEqual(r.cards[DUPONT].lbl, "departs in");    // matches the zero-walk stops' wording
 
-  const dupontInternal = r.internal.cards.find((c) => c.board.key === "dupont");
-  dupontInternal.onwayInput.checked = true;
-  r.internal.render();                                // same call the real switch's change fires
-  const onWay = readCards(r.cardEls).dupont;
-
-  assert.strictEqual(onWay.walking, true);
-  assert.strictEqual(onWay.badgeHidden, true);         // nothing to walk, nothing to show
-  assert.strictEqual(onWay.lbl, "departs in");          // matches the zero-walk stops' wording
-  assert.strictEqual(onWay.sprint, "");                 // nothing to be late for once walk = 0
-
-  // With the walk offset gone, the two rows must show Dupont's own next two
-  // departures verbatim -- not BTA's, whose schedule is unrelated; only the
-  // walk padding disappears, not which stop's timetable is in play.
+  // Unchecked, the two rows must show Dupont's own next two departures
+  // verbatim -- not BTA's, whose schedule is unrelated; the default is the
+  // plain schedule, not a different stop's.
   const now = { y: 2026, mo: 9, d: 1, sec: 8 * 3600 + 12 * 60 + 30 };  // 08:12:30
   const dupontTimes = r.internal.BOARDS.find((b) => b.key === "dupont").times;
   // .clock() returns a plain string (a primitive), so comparing element-by-
   // element sidesteps vm's cross-realm Array identity rather than fighting it.
   const raw = r.internal.upcoming(dupontTimes, 0, 0, now, 2).map(r.internal.clock);
-  assert.strictEqual(onWay.time1, raw[0]);
-  assert.strictEqual(onWay.time2, raw[1]);
-  assert.strictEqual(onWay.cd1, "2");   // 8:15 is 2 min out at 8:12:30, no walk to add
+  assert.strictEqual(r.cards[DUPONT].time1, raw[0]);
+  assert.strictEqual(r.cards[DUPONT].time2, raw[1]);
+  assert.strictEqual(r.cards[DUPONT].cd1, "2");   // 8:15 is 2 min out at 8:12:30, no walk added
 
-  // Flipping back restores the walk-adjusted view without a page reload.
+  const dupontInternal = r.internal.cards.find((c) => c.board.key === "dupont");
+  dupontInternal.onwayInput.checked = true;
+  r.internal.render();                                // same call the real switch's change fires
+  const leaving = readCards(r.cardEls).dupont;
+
+  assert.strictEqual(leaving.walking, false);
+  assert.strictEqual(leaving.badgeHidden, false);      // "15 min walk" now showing
+  assert.strictEqual(leaving.lbl, "leave in");
+  assert.strictEqual(leaving.time1, "8:30 AM");        // 8:25 is no longer walkable, 8:30 is
+  assert.strictEqual(leaving.cd1, "2");
+  assert.strictEqual(leaving.time2, "8:35 AM");
+  assert.strictEqual(leaving.sprint, "Run for 8:25 AM · left 3 min ago");
+
+  // Flipping back restores the plain schedule without a page reload.
   dupontInternal.onwayInput.checked = false;
   r.internal.render();
   const back = readCards(r.cardEls).dupont;
-  assert.strictEqual(back.walking, false);
+  assert.strictEqual(back.walking, true);
   assert.strictEqual(back.time1, r.cards[DUPONT].time1);
-  assert.strictEqual(back.lbl, "leave in");
+  assert.strictEqual(back.lbl, "departs in");
 }
 
 // Weekends and the small hours fall back to the next scheduled departure, with

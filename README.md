@@ -15,8 +15,20 @@ load.
 
 ## What each card shows
 
-Two rows: the bus you should leave for now, and the one after it, each paired
-with its actual clock time on the right —
+Two rows: the next bus, and the one after it, each paired with its actual
+clock time on the right. Dupont has a switch in its header, **On my way**,
+off by default:
+
+```
+DEPARTS IN
+  2  min                    8:15 AM
+  7  min                    8:20 AM
+```
+
+Check it and both rows switch to the time until you should **leave**, not
+until the bus arrives, because `WALK_MIN` puts Dupont 15 minutes from the
+door — and a sprint offer can appear underneath when an earlier bus is still
+reachable at a run:
 
 ```
 LEAVE IN
@@ -25,16 +37,15 @@ LEAVE IN
 Run for 8:25 AM · left 3 min ago
 ```
 
-Both rows are the time until you should **leave**, not until the bus arrives,
-because `WALK_MIN` puts Dupont 15 minutes from the door. Row one always tracks
-the first bus you can still catch at a walk; row two, the one after that. When
-an earlier bus is still within `SPRINT_MIN` of being reachable, it's offered
-underneath — worth five minutes during peak headways, twenty in the sparse
-midday hours, and at 11:58 PM on a Friday the difference between the last bus
-and Monday morning.
+Row one always tracks the first bus you can still catch (at a walk once the
+switch is on); row two, the one after that. When an earlier bus is still
+within `SPRINT_MIN` of being reachable, it's offered underneath — worth five
+minutes during peak headways, twenty in the sparse midday hours, and at
+11:58 PM on a Friday the difference between the last bus and Monday morning.
 
-Both constants are at the top of the `<script>` in `index.html`. Set a stop's
-walk to 0 to count down to the bus itself instead.
+`WALK_MIN` and `SPRINT_MIN` are at the top of the `<script>` in `index.html`.
+BTA and Lombardi have no switch and always count down to the bus itself
+(`WALK_MIN` is 0 for both).
 
 Colours: green above 5 minutes, amber 2–5, red below 2. It says "Now" or
 "1 min", never "0 min". Outside service hours or at the weekend a board reads
