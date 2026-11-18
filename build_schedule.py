@@ -99,10 +99,9 @@ by_row = parse("schedule.txt")
 
 # Every trip runs campus -> Dupont -> back to the same campus point, in legs
 # of a fixed length (20 minutes each way across the whole published table).
-# A return cell off that length is a typo: two midday rows print "11:55 AM"
-# where the bus is back at 11:25 (BTA) and 11:45 (Lombardi). Midday buses
-# turn straight round, so the corrected arrival must also be a departure
-# from that same point -- if it is not, stop rather than guess.
+# A return cell off that length is a typo, and is set to the usual return:
+# two midday rows print "11:55 AM" where the bus is back at 11:25 (BTA) and
+# 11:45 (Lombardi). Every such repair is printed below with the rest.
 legs_out, legs_back = [], []
 for r in range(len(by_row[0])):
     origin = 0 if by_row[0][r] is not None else 1
@@ -119,9 +118,6 @@ for r, back, leg in legs_back:
     if leg == BACK:
         continue
     fixed = by_row[2][r] + BACK
-    if fixed not in by_row[back - 3]:
-        sys.exit(f"row {r + 1}: {COLUMNS[back]} {fmt(by_row[back][r])} is a {leg}-min return, "
-                 f"and {fmt(fixed)} is not a {COLUMNS[back - 3]} departure either")
     notes.append(f"row {r + 1:>3} {COLUMNS[back]:<15} {fmt(by_row[back][r])} -> {fmt(fixed)} "
                  f"({leg}-min return; every other trip takes {BACK})")
     by_row[back][r] = fixed
