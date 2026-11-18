@@ -87,7 +87,10 @@ keeps the reading that steps forward the least, rather than patching rows by
 index. That one rule handles the published table's own errors: a stray
 `12:25 AM` sitting between 11:45 AM and 1:05 PM reads as 12:25 PM, and the
 closing `12:10 AM` belongs to the previous service day. A 24-hour cell such as
-`16:20` is parsed as written. It also prints `DUPONT_TO`/`DUPONT_ARRIVE` —
+`16:20` is parsed as written. Every trip takes 20 minutes back from Dupont, so
+a return that doesn't is repaired, but only when the repaired time is also the
+next departure from that stop: the two midday `11:55 AM` arrivals become 11:25
+(BTA) and 11:45 (Lombardi). It also prints `DUPONT_TO`/`DUPONT_ARRIVE` —
 which campus point (BTA or Lombardi) each Dupont departure loops back to, and
 when — for the tap-to-expand sheet's arrival column; paste all five arrays.
 

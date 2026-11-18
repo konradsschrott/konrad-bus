@@ -292,6 +292,12 @@ assert.deepStrictEqual(arrivalFor(12 * 60 + 45), { to: "lombardi", arrive: 13 * 
 assert.deepStrictEqual(arrivalFor(16 * 60), { to: "lombardi", arrive: 16 * 60 + 20 });
 // The closing trip: Dupont 12:10 AM (next day, minute 1450) -> BTA 12:30 AM (1470).
 assert.deepStrictEqual(arrivalFor(1450), { to: "bta", arrive: 1470 });
+// Two midday arrivals the source prints as "11:55 AM": the bus is back after
+// the usual 20 minutes, at the time it next departs from the same stop.
+assert.deepStrictEqual(arrivalFor(11 * 60 + 5), { to: "bta", arrive: 11 * 60 + 25 });
+assert.deepStrictEqual(arrivalFor(11 * 60 + 25), { to: "lombardi", arrive: 11 * 60 + 45 });
+// And with that, every trip is 20 minutes back from Dupont, without exception.
+dupont.times.forEach((t, i) => assert.strictEqual(dupont.arrive[i] - t, 20, "trip " + i));
 
 // remainingToday(): every entry is at or after `now`, at or before the cap,
 // and in the same order (and with the same values) upcoming() would produce

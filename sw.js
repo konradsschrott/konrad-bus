@@ -4,7 +4,7 @@
 
    Bump CACHE whenever the files below change, so an installed copy replaces
    its old one rather than serving it forever. */
-const CACHE = "guts-v4";
+const CACHE = "guts-v5";
 const ASSETS = [
   "./",
   "./index.html",
